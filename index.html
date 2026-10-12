@@ -3,1496 +3,519 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Santa Holidays</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,800&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <title>HQE - NOTE SPESE</title>
+  <!-- Tailwind CSS per la grafica -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome per le icone -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS per esportazione Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Tesseract.js per Lettura OCR automatica ricevute -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --santa-red-glow: linear-gradient(135deg, #ff0f7b 0%, #d80032 100%);
-      --santa-red-dark: #800f2f;
-      --holly-green: #00f5d4;
-      --gold-sparkle: #ffee32;
-      --gold-garland: #ffd700;
-      --white-gloss: rgba(255, 255, 255, 0.96);
-      --font-primary: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    }
-
-    body {
-      font-family: var(--font-primary);
-      min-height: 100vh;
-      background: #060713;
-      color: #1e293b;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    /* ACCESSIBILITÀ: FOCUS VISIBILE DEDICATO */
-    :focus-visible {
-      outline: 3px solid var(--holly-green) !important;
-      outline-offset: 2px !important;
-    }
-
-    /* SCHERMATA SPLASH / WELCOME FULL ROSSA CON BABBO NATALE GIGANTE ANIME */
-    #welcomeSplashScreen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: radial-gradient(circle at 50% 40%, #ff1e56 0%, #d80032 60%, #600018 100%);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 10px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
-    }
-
-    .welcome-title {
-      font-family: 'Cinzel', serif;
-      font-weight: 900;
-      font-size: clamp(2.5rem, 8vw, 5.5rem);
-      color: var(--gold-garland);
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 238, 50, 0.6), 0 4px 10px rgba(0,0,0,0.8);
-      margin-top: 10px;
-      text-align: center;
-      animation: goldPulse 2.5s ease-in-out infinite alternate;
-    }
-
-    @keyframes goldPulse {
-      0% { text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 238, 50, 0.6), 0 4px 10px rgba(0,0,0,0.8); }
-      100% { text-shadow: 0 0 25px rgba(255, 238, 50, 1), 0 0 50px rgba(255, 215, 0, 0.9), 0 4px 15px rgba(0,0,0,0.9); transform: scale(1.02); }
-    }
-
-    .splash-content-container {
-      position: relative;
-      width: 100%;
-      max-width: 1000px;
-      flex-grow: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .giant-anime-santa {
-      max-height: 72vh;
-      width: auto;
-      filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
-      transition: transform 0.3s ease;
-    }
-
-    #welcomeSplashScreen:hover .giant-anime-santa {
-      transform: scale(1.03);
-    }
-
-    /* FRECCA NATALIZIA "CLICCAMI" */
-    .click-me-pointer {
-      position: absolute;
-      right: 5%;
-      top: 45%;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 12px 24px;
-      border-radius: 50px;
-      border: 2px solid var(--gold-garland);
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 10px rgba(255, 215, 0, 0.4);
-      animation: floatArrow 1.5s ease-in-out infinite alternate;
-    }
-
-    .click-me-text {
-      font-size: clamp(1.2rem, 3vw, 2rem);
-      font-weight: 900;
-      color: #ffffff;
-      text-shadow: 0 0 10px var(--gold-sparkle), 0 2px 4px rgba(0,0,0,0.8);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .click-me-arrow {
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      color: var(--gold-garland);
-      animation: arrowBounce 1s ease-in-out infinite alternate;
-    }
-
-    @keyframes floatArrow {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(-15px); }
-    }
-
-    @keyframes arrowBounce {
-      0% { transform: translateX(0px); }
-      100% { transform: translateX(12px); }
-    }
-
-    /* SFONDO DINAMICO STILE ANIME PREMIUM */
-    .hero-bg-wrapper {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -3;
-      background: radial-gradient(circle at 50% 25%, #1c1e52 0%, #0c0d24 60%, #020208 100%);
-    }
-
-    /* FIOCCHI DI NEVE ANIMATI */
-    .snowflake {
-      position: fixed;
-      top: -10px;
-      color: #ffffff;
-      font-size: 1.2rem;
-      opacity: 0.9;
-      user-select: none;
-      z-index: -1;
-      pointer-events: none;
-      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
-      animation: fall linear infinite;
-    }
-
-    @keyframes fall {
-      to {
-        transform: translateY(105vh) rotate(360deg);
-      }
-    }
-
-    /* BABBO NATALE FLYING CONTESTO */
-    .santa-flying-container {
-      position: fixed;
-      top: 18%;
-      z-index: -1;
-      pointer-events: none;
-      animation: santaCenterDynamic 18s ease-in-out infinite alternate;
-    }
-
-    @keyframes santaCenterDynamic {
-      0% { left: -480px; transform: translateY(-20px) rotate(-3deg) scale(0.95); }
-      25% { transform: translateY(35px) rotate(2deg) scale(1.05); }
-      50% { left: 38vw; transform: translateY(-40px) rotate(-4deg) scale(1.15); }
-      75% { transform: translateY(25px) rotate(3deg) scale(1.05); }
-      100% { left: 105vw; transform: translateY(-15px) rotate(-2deg) scale(0.95); }
-    }
-
-    .tech-landscape {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      height: 310px;
-      z-index: -2;
-      pointer-events: none;
-    }
-
-    /* HEADER LUCIDO PREMIUM CON EFFETTO RILIEVO */
-    .header-bar {
-      background: linear-gradient(135deg, rgba(216, 0, 50, 0.95), rgba(167, 0, 30, 0.95));
-      backdrop-filter: blur(16px);
-      color: white;
-      padding: 18px 0;
-      margin-bottom: 25px;
-      border-bottom: 4px solid #00f5d4;
-      box-shadow: 0 8px 32px rgba(0, 245, 212, 0.35), 0 0 20px rgba(216, 0, 50, 0.7);
-      transition: all 0.5s ease;
-    }
-
-    /* VARIANTE INTESTAZIONE VERDE BRILLANTE (P.IVA) */
-    .header-bar.header-piva {
-      background: linear-gradient(135deg, #00f5d4 0%, #00b894 50%, #007958 100%) !important;
-      border-bottom: 4px solid #ffee32 !important;
-      box-shadow: 0 8px 32px rgba(0, 245, 212, 0.6), 0 0 30px rgba(0, 245, 212, 0.8) !important;
-      color: #002b20 !important;
-    }
-
-    .header-bar.header-piva .h3 {
-      color: #002b20 !important;
-    }
-
-    /* VARIANTE INTESTAZIONE ORO BRILLANTE (CoCoCo) */
-    .header-bar.header-cococo {
-      background: linear-gradient(135deg, #fff176 0%, #ffd700 50%, #b7950b 100%) !important;
-      border-bottom: 4px solid #ffffff !important;
-      box-shadow: 0 8px 32px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.8) !important;
-      color: #3e2723 !important;
-    }
-
-    .header-bar.header-cococo .h3 {
-      color: #3e2723 !important;
-    }
-
-    .header-subtitle {
-      font-weight: 800;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-      color: #00f5d4;
-      text-shadow: 0 0 10px rgba(0, 245, 212, 0.8), 0 1px 2px rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .header-bar.header-piva .header-subtitle {
-      color: #003d2d !important;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(255,255,255,0.8) !important;
-    }
-
-    .header-bar.header-cococo .header-subtitle {
-      color: #5d4037 !important;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(255,255,255,0.8) !important;
-    }
-
-    .audio-control-btn {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      color: white;
-      border-radius: 50px;
-      padding: 6px 14px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      backdrop-filter: blur(5px);
-      transition: all 0.3s;
-      cursor: pointer;
-    }
-
-    .audio-control-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.05);
-    }
-
-    .garland-box-wrapper {
-      position: relative;
-      padding: 14px;
-      border-radius: 32px;
-      background: radial-gradient(circle, rgba(255,215,0,0.35) 0%, rgba(218,165,32,0.12) 70%, transparent 100%);
-      border: 3px dashed #ffd700;
-      box-shadow: 0 0 30px rgba(255, 215, 0, 0.7), inset 0 0 20px rgba(255, 215, 0, 0.5);
-      animation: garlandGlow 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes garlandGlow {
-      0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3); border-color: #ffd700; }
-      100% { box-shadow: 0 0 40px rgba(255, 238, 50, 1), inset 0 0 25px rgba(255, 238, 50, 0.7); border-color: #fff3a0; }
-    }
-
-    .garland-box-wrapper::before, .garland-box-wrapper::after {
-      content: '🎀';
-      position: absolute;
-      font-size: 2rem;
-      z-index: 2;
-    }
-    .garland-box-wrapper::before { top: -14px; left: -10px; }
-    .garland-box-wrapper::after { top: -14px; right: -10px; }
-
-    .glossy-login-card {
-      background: linear-gradient(145deg, #ff1e56, #800f2f);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 24px;
-      box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 15px 35px rgba(0, 0, 0, 0.6);
-      color: white;
-      backdrop-filter: blur(12px);
-    }
-
-    .login-title {
-      font-weight: 900;
-      letter-spacing: 2px;
-      color: #ffffff;
-      text-shadow: 0 3px 8px rgba(0,0,0,0.6), 0 0 15px var(--gold-sparkle);
-    }
-
-    .card-glossy-light {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 250, 0.95));
-      border-radius: 22px;
-      border: 2px solid rgba(255, 255, 255, 0.8);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 1);
-      backdrop-filter: blur(12px);
-    }
-
-    .day-box {
-      width: 68px;
-      min-height: 68px;
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      font-size: 0.82rem;
-      text-align: center;
-      padding: 5px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      background: linear-gradient(145deg, #ffffff, #f1f5f9);
-      color: #0f172a;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08), inset 0 1px 1px #ffffff;
-      text-shadow: 0 1px 0 rgba(255,255,255,0.8);
-    }
-
-    .day-box:hover:not(.closed):not(.holiday),
-    .day-box:focus-visible:not(.closed):not(.holiday) {
-      transform: translateY(-4px) scale(1.06);
-      box-shadow: 0 10px 22px rgba(0, 245, 212, 0.4), inset 0 1px 2px #ffffff;
-      border-color: #00f5d4;
-    }
-
-    .day-box .day-sub { font-size: 0.65rem; font-weight: 600; margin-top: 2px; }
-
-    .day-box.selected {
-      background: linear-gradient(145deg, #00b894, #009475) !important;
-      border-color: #00f5d4 !important;
-      color: white !important;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.4) !important;
-      box-shadow: 0 8px 20px rgba(0, 184, 148, 0.5), inset 0 1px 2px rgba(255,255,255,0.4) !important;
-    }
-
-    .day-box.closed {
-      background: linear-gradient(145deg, #d80032, #990022) !important;
-      border-color: #ff4d6d !important;
-      color: white !important;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
-      box-shadow: inset 0 1px 2px rgba(255,255,255,0.3) !important;
-      cursor: not-allowed;
-    }
-
-    .day-box.holiday {
-      background: linear-gradient(145deg, #ff7675, #e17055) !important;
-      border-color: #fab1a0 !important;
-      color: white !important;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
-      cursor: not-allowed;
-    }
-
-    .hq-recommend-box {
-      background: linear-gradient(145deg, #fffde7 0%, #fff59d 100%);
-      border: 2px solid #fbc02d;
-      color: #5d4037;
-      font-weight: 800;
-      padding: 10px 18px;
-      border-radius: 14px;
-      display: inline-block;
-      box-shadow: 0 6px 16px rgba(251, 192, 45, 0.3), inset 0 1px 2px #ffffff;
-      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
-      letter-spacing: 0.2px;
-    }
-
-    .admin-table-custom {
-      border-collapse: separate;
-      border-spacing: 0 10px;
-      background: transparent !important;
-    }
-
-    .admin-table-custom thead tr {
-      background: linear-gradient(145deg, #d80032 0%, #800f2f 100%) !important;
-      color: white !important;
-      box-shadow: 0 6px 18px rgba(216, 0, 50, 0.35);
-    }
-
-    .admin-table-custom thead th {
-      border: none !important;
-      padding: 14px 12px !important;
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-
-    .admin-table-custom thead th:first-child { border-radius: 14px 0 0 14px; }
-    .admin-table-custom thead th:last-child { border-radius: 0 14px 14px 0; }
-
-    .admin-table-custom tbody tr {
-      background: linear-gradient(145deg, #ffffff, #f8fafc);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
-      border-radius: 14px;
-      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .admin-table-custom tbody tr:hover {
-      transform: translateY(-3px) scale(1.002);
-      box-shadow: 0 10px 25px rgba(0, 245, 212, 0.3), inset 0 1px 0 #ffffff;
-      background: #ffffff;
-    }
-
-    .admin-table-custom tbody td {
-      border: none !important;
-      padding: 14px 12px !important;
-      vertical-align: middle;
-      font-size: 0.85rem;
-    }
-
-    .admin-table-custom tbody td:first-child { border-radius: 14px 0 0 14px; border-left: 3px solid #d80032 !important; }
-    .admin-table-custom tbody td:last-child { border-radius: 0 14px 14px 0; }
-
-    .btn-santa {
-      background: linear-gradient(145deg, #ff1e56 0%, #d80032 100%);
-      color: white;
-      font-weight: 800;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 6px 18px rgba(255, 30, 86, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      transition: all 0.2s;
-    }
-
-    .btn-santa:hover {
-      background: linear-gradient(145deg, #ff4d6d 0%, #ff1e56 100%);
-      color: white;
-      box-shadow: 0 8px 24px rgba(255, 30, 86, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.6);
-      transform: translateY(-2px);
-    }
-
-    .btn-green-holly {
-      background: linear-gradient(145deg, #00b894 0%, #009475 100%);
-      color: white;
-      font-weight: 800;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 6px 18px rgba(0, 184, 148, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    }
-
-    .btn-green-holly:hover {
-      background: linear-gradient(145deg, #55efc4 0%, #00b894 100%);
-      color: white;
-      box-shadow: 0 8px 24px rgba(0, 184, 148, 0.65);
-    }
-
-    .badge-da-inserire { background: #fff3cd; color: #856404; font-weight: 800; border: 1px solid #ffeba2; box-shadow: inset 0 1px 0 #fff; }
-    .badge-inserito { background: #d4edda; color: #155724; font-weight: 800; border: 1px solid #c3e6cb; box-shadow: inset 0 1px 0 #fff; }
-    .extra-small { font-size: 0.72rem; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    .sidebar { width: 280px; min-height: 100vh; }
+    .content-area { margin-left: 280px; padding-bottom: 80px; }
+    footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 50px; z-index: 50; }
   </style>
 </head>
-<body>
+<body class="text-slate-800 antialiased">
 
-  <!-- PRIMISSIMA SCHERMATA: SPLASH SCREEN ROSSA CON BUON NATALE IN ORO E BABBO NATALE ANIME GIGANTE -->
-  <div id="welcomeSplashScreen" onclick="dismissWelcomeScreen()" role="button" tabindex="0" aria-label="Clicca per entrare in Santa Holidays">
-    <h1 class="welcome-title">Buon Natale</h1>
-    
-    <div class="splash-content-container">
-      <!-- SVG BABBO NATALE ANIME GIGANTE HD -->
-      <svg class="giant-anime-santa" viewBox="0 0 500 650" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="santaSuitGradAnime" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#ff2e63"/>
-            <stop offset="50%" stop-color="#d80032"/>
-            <stop offset="100%" stop-color="#70001a"/>
-          </linearGradient>
-          <linearGradient id="goldAccents" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#ffee32"/>
-            <stop offset="100%" stop-color="#ffd700"/>
-          </linearGradient>
-          <filter id="glowAnime">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        
-        <!-- Sacco dei regali anime -->
-        <path d="M 100 220 C 30 280 40 500 130 580 C 220 620 300 580 280 450 Z" fill="#795548" stroke="#3e2723" stroke-width="6"/>
-        <path d="M 120 220 Q 140 250 170 230" stroke="url(#goldAccents)" stroke-width="8" stroke-linecap="round"/>
-
-        <!-- Mantello/Abito di Babbo Natale -->
-        <path d="M 160 250 C 120 350 110 520 180 620 L 340 620 C 410 520 400 350 360 250 Z" fill="url(#santaSuitGradAnime)"/>
-        
-        <!-- Bordo Bianco della giacca Anime -->
-        <path d="M 180 620 Q 260 635 340 620 L 330 570 Q 260 585 190 570 Z" fill="#ffffff" filter="url(#glowAnime)"/>
-        <path d="M 240 250 L 240 580" stroke="#ffffff" stroke-width="28" stroke-linecap="round" filter="url(#glowAnime)"/>
-
-        <!-- Cintura con fibbia dorata -->
-        <rect x="180" y="420" width="160" height="36" rx="6" fill="#111111"/>
-        <rect x="235" y="410" width="50" height="56" rx="8" fill="url(#goldAccents)" stroke="#111111" stroke-width="4"/>
-
-        <!-- Braccia e Guanti Anime -->
-        <path d="M 160 270 Q 90 320 80 410 Q 110 430 130 380 Q 150 330 180 290 Z" fill="url(#santaSuitGradAnime)"/>
-        <circle cx="85" cy="415" r="22" fill="#111111"/> <!-- Guanto SX -->
-        
-        <path d="M 360 270 Q 420 320 440 370 Q 420 410 380 380 Q 360 330 340 290 Z" fill="url(#santaSuitGradAnime)"/>
-        <circle cx="430" cy="380" r="22" fill="#111111"/> <!-- Guanto DX -->
-
-        <!-- VISO ANIME -->
-        <circle cx="260" cy="200" r="65" fill="#ffcc80"/>
-        
-        <!-- Occhi Espressivi Anime -->
-        <ellipse cx="238" cy="195" rx="8" ry="12" fill="#1e293b"/>
-        <ellipse cx="282" cy="195" rx="8" ry="12" fill="#1e293b"/>
-        <circle cx="236" cy="191" r="3" fill="#ffffff"/>
-        <circle cx="280" cy="191" r="3" fill="#ffffff"/>
-        <path d="M 230 178 Q 240 172 250 178" stroke="#5d4037" stroke-width="4" stroke-linecap="round"/>
-        <path d="M 270 178 Q 280 172 290 178" stroke="#5d4037" stroke-width="4" stroke-linecap="round"/>
-        
-        <!-- Guance Rosse Anime -->
-        <ellipse cx="225" cy="210" rx="10" ry="6" fill="#ff5252" opacity="0.6"/>
-        <ellipse cx="295" cy="210" rx="10" ry="6" fill="#ff5252" opacity="0.6"/>
-
-        <!-- Barba Soffice & Baffi Anime -->
-        <path d="M 190 200 C 180 320 340 320 330 200 C 360 270 340 350 260 360 C 180 350 160 270 190 200 Z" fill="#ffffff" filter="url(#glowAnime)"/>
-        <path d="M 260 215 Q 230 230 205 215 Q 235 245 260 225 Q 285 245 315 215 Q 290 230 260 215 Z" fill="#f8fafc"/>
-
-        <!-- Cappello Natalizio Anime -->
-        <path d="M 195 170 Q 260 100 340 160 Q 380 230 410 260 Q 370 260 330 200 Q 260 150 195 170 Z" fill="url(#santaSuitGradAnime)"/>
-        <path d="M 190 170 Q 260 150 330 170 Q 335 190 260 185 Q 185 190 190 170 Z" fill="#ffffff" filter="url(#glowAnime)"/>
-        <circle cx="415" cy="265" r="18" fill="#ffffff" filter="url(#glowAnime)"/>
-      </svg>
-
-      <!-- FRECCIA CON SCRITTA "CLICCAMI" -->
-      <div class="click-me-pointer">
-        <span class="click-me-text">Cliccami</span>
-        <span class="click-me-arrow">➔</span>
+  <!-- Schermata di Login -->
+  <div id="login-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full border border-slate-100">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/30 mb-4">
+          <i class="fa-solid fa-file-invoice-dollar fa-2x"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">HQE - NOTE SPESE</h2>
+        <p class="text-sm text-slate-500 mt-1">Inserisci la tua mail aziendale per accedere</p>
       </div>
-    </div>
-  </div>
-
-  <!-- SFONDO ANIME -->
-  <div class="hero-bg-wrapper" aria-hidden="true"></div>
-  <div id="snowflakeContainer" aria-hidden="true"></div>
-
-  <!-- BABBO NATALE HD AD ALTA DEFINIZIONE AL CENTRO SCHERMO -->
-  <div class="santa-flying-container" aria-hidden="true">
-    <svg width="480" height="200" viewBox="0 0 480 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="santaSuitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#ff2e63"/>
-          <stop offset="50%" stop-color="#d80032"/>
-          <stop offset="100%" stop-color="#70001a"/>
-        </linearGradient>
-
-        <linearGradient id="goldSleighGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#fff176"/>
-          <stop offset="50%" stop-color="#ffd700"/>
-          <stop offset="100%" stop-color="#b7950b"/>
-        </linearGradient>
-
-        <linearGradient id="sackGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#a0522d"/>
-          <stop offset="40%" stop-color="#8b4513"/>
-          <stop offset="100%" stop-color="#4a2306"/>
-        </linearGradient>
-
-        <linearGradient id="beardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="100%" stop-color="#e2e8f0"/>
-        </linearGradient>
-
-        <filter id="dropShadow3D" x="-10%" y="-10%" width="130%" height="130%">
-          <feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.6"/>
-        </filter>
-        <filter id="goldGlow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-
-      <!-- Scintille luminose HD -->
-      <g filter="url(#goldGlow)">
-        <circle cx="20" cy="100" r="3" fill="#ffee32"/>
-        <circle cx="45" cy="85" r="4" fill="#ffffff"/>
-        <circle cx="75" cy="115" r="3.5" fill="#00f5d4"/>
-        <circle cx="110" cy="95" r="4.5" fill="#ffee32"/>
-      </g>
-
-      <!-- Renna Guida HD -->
-      <g id="reindeerHD" filter="url(#dropShadow3D)">
-        <path d="M 400 90 Q 430 55 450 72 Q 462 88 438 108 L 405 115 Z" fill="#8d6e63" stroke="#4e342e" stroke-width="2"/>
-        <circle cx="456" cy="76" r="5" fill="#ff1e56" filter="url(#goldGlow)"/>
-        <path d="M 428 58 L 420 40 M 430 52 L 438 38 M 424 46 L 416 34" stroke="#4e342e" stroke-width="3" stroke-linecap="round"/>
-      </g>
-
-      <!-- Redini Lucenti -->
-      <path d="M 270 112 Q 340 100 405 95" stroke="url(#goldSleighGrad)" stroke-width="3" stroke-dasharray="6 2" filter="url(#goldGlow)"/>
-
-      <!-- SACCO DI REGALI GROSSO -->
-      <g id="giantSackHD" filter="url(#dropShadow3D)">
-        <path d="M 110 65 Q 75 130 135 160 Q 210 160 190 95 Q 170 50 135 50 Z" fill="url(#sackGrad)" stroke="#2d1503" stroke-width="2.5"/>
-        <path d="M 130 50 Q 145 60 135 70 Q 120 60 130 50 Z" fill="#6d3811"/>
-        <path d="M 120 68 Q 138 75 152 66" stroke="#ffee32" stroke-width="4" stroke-linecap="round"/>
-      </g>
-
-      <!-- Slitta 3D Lucida -->
-      <g id="sleighHD" filter="url(#dropShadow3D)">
-        <path d="M 175 130 Q 155 85 225 85 L 290 85 Q 315 130 255 142 Z" fill="url(#santaSuitGrad)" stroke="#ffffff" stroke-width="2"/>
-        <path d="M 170 128 Q 230 138 295 125" fill="none" stroke="url(#goldSleighGrad)" stroke-width="4"/>
-        <path d="M 155 152 L 305 152 Q 320 152 325 138" stroke="url(#goldSleighGrad)" stroke-width="5" stroke-linecap="round" fill="none" filter="url(#goldGlow)"/>
-        <line x1="195" y1="144" x2="195" y2="152" stroke="url(#goldSleighGrad)" stroke-width="3.5"/>
-        <line x1="270" y1="138" x2="270" y2="152" stroke="url(#goldSleighGrad)" stroke-width="3.5"/>
-      </g>
-
-      <!-- BABBO NATALE GROSSO & DEFINITO -->
-      <g id="bigSantaHD">
-        <path d="M 215 80 C 195 92 195 128 245 128 C 275 128 275 92 255 80 Z" fill="url(#santaSuitGrad)" stroke="#800f2f" stroke-width="1.5"/>
-        <path d="M 232 80 L 232 128" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
-        <rect x="208" y="102" width="50" height="9" rx="2" fill="#111111"/>
-        <rect x="227" y="98" width="12" height="17" rx="2" fill="url(#goldSleighGrad)" stroke="#111111" stroke-width="1.5"/>
-        <path d="M 248 92 Q 270 95 278 110" stroke="url(#santaSuitGrad)" stroke-width="12" stroke-linecap="round"/>
-        <circle cx="280" cy="112" r="6" fill="#111111"/>
-
-        <circle cx="234" cy="62" r="15" fill="#ffcc80"/>
-        <circle cx="240" cy="60" r="2" fill="#2d1503"/>
-        <path d="M 242 64 Q 248 66 244 68" stroke="#d80032" stroke-width="1.5" fill="none"/>
-        
-        <path d="M 218 64 Q 234 94 252 64 Q 244 98 226 92 Z" fill="url(#beardGrad)" filter="url(#dropShadow3D)"/>
-        <path d="M 234 67 Q 224 72 218 68 M 234 67 Q 244 72 250 68" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
-
-        <path d="M 220 54 Q 234 30 258 50 Z" fill="url(#santaSuitGrad)"/>
-        <rect x="217" y="52" width="30" height="7" rx="3.5" fill="#ffffff" filter="url(#dropShadow3D)"/>
-        <circle cx="260" cy="51" r="5" fill="#ffffff"/>
-      </g>
-    </svg>
-  </div>
-
-  <!-- SCENOGRAFIA VETTORIALE -->
-  <svg class="tech-landscape" viewBox="0 0 1200 250" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0,205 Q150,185 300,210 T600,195 T900,205 T1200,190 L1200,250 L0,250 Z" fill="#ffffff" opacity="0.96"/>
-    
-    <g transform="translate(120, 105)">
-      <rect x="0" y="30" width="38" height="75" rx="8" fill="#1e293b"/>
-      <rect x="6" y="40" width="26" height="22" rx="4" fill="#00f5d4"/>
-      <circle cx="19" cy="80" r="6" fill="#ffee32"/>
-      <path d="M -3 32 Q 19 2 41 32 Z" fill="#d80032"/>
-      <circle cx="19" cy="2" r="5" fill="#ffffff"/>
-      <rect x="-5" y="28" width="48" height="8" rx="4" fill="#ffffff"/>
-    </g>
-
-    <g transform="translate(290, 35)">
-      <line x1="20" y1="175" x2="35" y2="20" stroke="#94a3b8" stroke-width="3"/>
-      <line x1="50" y1="175" x2="35" y2="20" stroke="#94a3b8" stroke-width="3"/>
-      <rect x="12" y="30" width="7" height="28" rx="2" fill="#00f5d4"/>
-      <rect x="51" y="30" width="7" height="28" rx="2" fill="#00f5d4"/>
-      <path d="M 21 22 Q 35 -6 49 22 Z" fill="#d80032"/>
-      <circle cx="35" cy="-6" r="5.5" fill="#ffffff"/>
-      <rect x="18" y="20" width="34" height="7" rx="3" fill="#ffffff"/>
-    </g>
-
-    <g transform="translate(880, 95)">
-      <rect x="0" y="30" width="42" height="85" rx="9" fill="#0f172a"/>
-      <rect x="7" y="44" width="28" height="24" rx="4" fill="#ff1e56"/>
-      <path d="M -4 32 Q 21 0 46 32 Z" fill="#d80032"/>
-      <circle cx="21" cy="0" r="6" fill="#ffffff"/>
-      <rect x="-6" y="28" width="54" height="9" rx="4" fill="#ffffff"/>
-    </g>
-
-    <g transform="translate(1030, 45)">
-      <line x1="20" y1="165" x2="35" y2="30" stroke="#94a3b8" stroke-width="3"/>
-      <line x1="50" y1="165" x2="35" y2="30" stroke="#94a3b8" stroke-width="3"/>
-      <path d="M 21 32 Q 35 5 49 32 Z" fill="#d80032"/>
-      <circle cx="35" cy="5" r="5" fill="#ffffff"/>
-      <rect x="18" y="30" width="34" height="7" rx="3" fill="#ffffff"/>
-    </g>
-  </svg>
-
-  <!-- HEADER APPLICAZIONE -->
-  <header id="mainHeader" class="header-bar">
-    <div class="container d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center gap-3">
-        <span class="fs-1" aria-hidden="true">🎄</span>
+      <form id="login-form" action="javascript:void(0);" onsubmit="login(); return false;" class="space-y-4">
         <div>
-          <h1 class="h3 m-0 fw-black tracking-wide" style="font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.4);">Santa Holidays</h1>
-          <div class="header-subtitle" id="headerSubtitleContainer"></div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Email Aziendale</label>
+          <div class="relative">
+            <i class="fa-solid fa-envelope absolute left-4 top-3.5 text-slate-400"></i>
+            <input type="email" id="user-email-input" placeholder="nome.cognome@hqe.it" class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition" required>
+          </div>
         </div>
+        <button type="submit" id="btn-login" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-600/25 transition duration-200 flex items-center justify-center space-x-2">
+          <span>Accedi al Portale</span>
+          <i class="fa-solid fa-arrow-right text-sm"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Layout Applicazione -->
+  <div id="app-container" class="hidden flex min-h-screen">
+    
+    <!-- Barra Verticale a Sinistra -->
+    <aside class="sidebar bg-slate-900 text-slate-300 fixed top-0 left-0 flex flex-col justify-between shadow-2xl z-40">
+      <div>
+        <div class="p-6 border-b border-slate-800/80 flex items-center space-x-3">
+          <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md">HQ</div>
+          <div>
+            <span class="font-bold text-lg tracking-wide text-white block leading-none">HQE PORTAL</span>
+            <span class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Gestionale Note Spese</span>
+          </div>
+        </div>
+        <nav class="mt-6 px-4 space-y-1.5">
+          <button onclick="showSection('profile')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition group">
+            <i class="fa-solid fa-user-circle w-5 text-slate-400 group-hover:text-blue-400 transition"></i>
+            <span class="font-medium text-sm">Il Mio Profilo</span>
+          </button>
+          <button onclick="showSection('upload')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition group">
+            <i class="fa-solid fa-cloud-arrow-up w-5 text-slate-400 group-hover:text-blue-400 transition"></i>
+            <span class="font-medium text-sm">Carica Nota Spesa</span>
+          </button>
+          <button id="nav-admin" onclick="showSection('admin')" class="nav-btn hidden w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition group">
+            <i class="fa-solid fa-user-shield w-5 text-slate-400 group-hover:text-amber-400 transition"></i>
+            <span class="font-medium text-sm">Gestione Risorse (Admin)</span>
+          </button>
+        </nav>
       </div>
-      <div class="d-flex align-items-center gap-3">
-        <!-- PULSANTE CONTROLLO MUSICA NATALIZIA -->
-        <button id="musicToggleBtn" class="audio-control-btn" onclick="toggleAudio()" aria-label="Attiva o disattiva musica di sottofondo">🎵 Musica: OFF</button>
-        
-        <div id="userInfo" class="d-none text-end">
-          <span id="userNameDisplay" class="fw-bold me-2 text-white"></span>
-          <span id="userInquadramentoBadge" class="badge bg-light text-danger me-2 d-none fw-bold shadow-sm"></span>
-          <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="logout()" aria-label="Effettua il logout dal portale">Logout</button>
+      <div class="p-4 border-t border-slate-800/80">
+        <button onclick="logout()" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 transition font-medium text-sm">
+          <i class="fa-solid fa-right-from-bracket w-5"></i>
+          <span>Esci dall'Account</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Area Contenuti Principale -->
+    <main class="content-area flex-1 p-10">
+      
+      <!-- Sezione: Profilo Utente Base -->
+      <section id="sec-profile" class="app-sec">
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Il Mio Profilo</h1>
+            <p class="text-slate-500 text-sm mt-1">Riepilogo delle note spese personali registrate nel sistema</p>
+          </div>
+          <span id="p-role-badge" class="px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase bg-blue-100 text-blue-800">BASE</span>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 mb-8 max-w-xl">
+          <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 font-bold text-xl">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Risorsa Dipendente</p>
+              <p id="p-name" class="font-bold text-2xl text-slate-900 mt-0.5">-</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex items-center space-x-5">
+            <div class="p-4 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-receipt fa-2x"></i></div>
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Note Spesa Caricate</p>
+              <p id="stat-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex items-center space-x-5">
+            <div class="p-4 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fa-solid fa-euro-sign fa-2x"></i></div>
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Importo Totale Caricato</p>
+              <p id="stat-total" class="text-3xl font-extrabold text-slate-900 mt-1">€ 0.00</p>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="text-xl font-bold text-slate-900 mb-4">Storico Documenti Caricati</h2>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-semibold uppercase text-xs">
+              <tr>
+                <th class="p-4 pl-6">Data</th>
+                <th class="p-4">Descrizione</th>
+                <th class="p-4">Importo</th>
+                <th class="p-4 pr-6">Allegato Documento</th>
+              </tr>
+            </thead>
+            <tbody id="my-expenses-list" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Sezione: Upload Nota Spesa -->
+      <section id="sec-upload" class="app-sec hidden">
+        <div class="mb-8">
+          <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Carica Nuova Nota Spesa</h1>
+          <p class="text-slate-500 text-sm mt-1">Inserisci la ricevuta in formato PDF o immagine per la scansione automatica</p>
+        </div>
+
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 max-w-2xl">
+          <div class="mb-6">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Seleziona File Ricevuta (PDF o Immagine)</label>
+            <input type="file" id="expense-file" accept="image/*,.pdf" onchange="processOCR()" class="w-full border border-slate-200 p-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition cursor-pointer">
+          </div>
+
+          <div id="ocr-status" class="hidden my-4 p-4 bg-blue-50/80 text-blue-700 text-sm rounded-xl flex items-center space-x-3 border border-blue-100">
+            <i class="fa-solid fa-spinner fa-spin text-lg"></i>
+            <span>Lettura OCR ed estrazione automatica dei dati in corso...</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Importo Estratto (€)</label>
+              <input type="number" step="0.01" id="exp-amount" class="w-full border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none" placeholder="0.00">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Data Nota Spesa</label>
+              <input type="date" id="exp-date" class="w-full border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none">
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Descrizione / Categoria</label>
+            <input type="text" id="exp-desc" placeholder="es. Viaggio di lavoro, Pranzo di rappresentanza, Carburante" class="w-full border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none">
+          </div>
+
+          <button onclick="saveExpense()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-emerald-600/25 transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Invia e Notifica gli Amministratori</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Sezione: Admin (Tutte le Risorse) -->
+      <section id="sec-admin" class="app-sec hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Gestione Completa Risorse (ADMIN)</h1>
+            <p class="text-slate-500 text-sm mt-1">Panoramica globale delle risorse dell'azienda e relativi totali note spese</p>
+          </div>
+          <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-sm font-semibold px-5 py-3 rounded-xl flex items-center space-x-2 shadow-lg shadow-emerald-600/20 transition self-start">
+            <i class="fa-solid fa-file-excel text-base"></i>
+            <span>Esporta in Excel (.xlsx)</span>
+          </button>
+        </div>
+
+        <div class="mb-6">
+          <input type="text" id="search-admin" onkeyup="filterAdminTable()" placeholder="Cerca per Nome, Cognome, Codice Fiscale..." class="w-full max-w-md border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none bg-white shadow-sm">
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-x-auto">
+          <table id="admin-table" class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-semibold uppercase text-xs">
+              <tr>
+                <th class="p-4 pl-6">Cognome</th>
+                <th class="p-4">Nome</th>
+                <th class="p-4">Codice Fiscale</th>
+                <th class="p-4">Contratto</th>
+                <th class="p-4 text-center">N° Note Spese</th>
+                <th class="p-4">Totale Importi</th>
+                <th class="p-4 pr-6 text-center">Dettaglio</th>
+              </tr>
+            </thead>
+            <tbody id="admin-resources-list" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Modal Dettaglio Note Spesa Risorsa per Admin -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-3xl w-full border border-slate-100 max-h-[85vh] flex flex-col">
+        <div class="flex justify-between items-center pb-4 border-b">
+          <div>
+            <h3 id="modal-user-name" class="text-xl font-bold text-slate-900">Note Spese Risorsa</h3>
+            <p id="modal-user-email" class="text-xs text-slate-500"></p>
+          </div>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-2"><i class="fa-solid fa-xmark fa-xl"></i></button>
+        </div>
+        <div class="overflow-y-auto py-4 flex-1">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase">
+              <tr>
+                <th class="p-3">Data</th>
+                <th class="p-3">Descrizione</th>
+                <th class="p-3">Importo</th>
+                <th class="p-3">Documento allegato</th>
+              </tr>
+            </thead>
+            <tbody id="modal-expenses-list" class="divide-y"></tbody>
+          </table>
         </div>
       </div>
     </div>
-  </header>
 
-  <main class="container mb-5">
+    <!-- Footer Fisso -->
+    <footer class="bg-slate-900 text-slate-400 text-xs flex items-center justify-between px-8 border-t border-slate-800">
+      <div class="font-semibold text-slate-300">HQE - NOTE SPESE v2.0</div>
+      <div>&copy; 2026 HQ Engineering - Tutti i diritti riservati</div>
+    </footer>
 
-    <!-- RIQUADRO DI ACCESSO CON GHIRLANDA NATALIZIA DORATA -->
-    <section id="loginCard" class="mx-auto mt-4" style="max-width: 460px;">
-      <div class="garland-box-wrapper">
-        <div class="card glossy-login-card p-2">
-          <div class="card-body text-center p-4">
-            <div class="fs-1 mb-2" aria-hidden="true">🎅 ✨ 🧁</div>
-            <h2 class="login-title h3 mb-1">Santa Holidays</h2>
-            <p class="small text-white-75 mb-4">Inserisci la tua email aziendale per accedere al portale.</p>
-            
-            <form id="loginForm" class="needs-validation" novalidate onsubmit="handleLogin(event)">
-              <div class="mb-3 text-start">
-                <label for="loginEmail" class="form-label small fw-bold text-white">Email Aziendale</label>
-                <input type="email" id="loginEmail" class="form-control form-control-sm border-0 rounded-3 py-2 px-3 shadow" placeholder="nome.cognome@azienda.it" required aria-required="true">
-                <div class="invalid-feedback text-warning fw-bold small mt-1">Inserisci un'email aziendale valida</div>
-              </div>
-
-              <div id="adminPasswordField" class="mb-3 text-start d-none">
-                <label for="loginPassword" class="form-label small fw-bold text-white">Password Amministratore</label>
-                <input type="password" id="loginPassword" class="form-control form-control-sm border-0 rounded-3 py-2 px-3 shadow" placeholder="Password admin">
-                <div class="invalid-feedback text-warning fw-bold small mt-1">La password amministratore è obbligatoria.</div>
-              </div>
-              <div id="loginError" class="alert alert-warning text-dark small py-2 d-none rounded-3 fw-bold" role="alert" aria-live="assertive"></div>
-              <button type="submit" id="loginSubmitBtn" class="btn btn-santa w-100 py-2.5 rounded-3 mt-2 fs-6">
-                <span class="btn-text">Scegli il tuo Natale ✨</span>
-                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CALENDARIO PERSONALE PER UTENTI -->
-    <section id="calendarSection" class="d-none mb-4" aria-labelledby="calendarTitle">
-      <div class="card card-glossy-light">
-        <div class="card-header bg-transparent fw-bold py-3 d-flex justify-content-between align-items-center border-0 rounded-top-4">
-          <h2 id="calendarTitle" class="h5 m-0 text-danger fw-black">📅 Selezione Giornate</h2>
-        </div>
-        <div class="card-body">
-          <div id="guidanceText" class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 text-danger small mb-3 rounded-3 fw-semibold" role="region" aria-live="polite"></div>
-
-          <!-- LEGENDA COLORI & BOX CONSIGLIO SANTA HOLIDAYS -->
-          <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-            <div id="legendContainer" class="d-flex flex-wrap gap-3 small fw-bold"></div>
-            <!-- BOX CONSIGLIO DINAMICO -->
-            <div id="hqSuggestBox" class="hq-recommend-box" role="note">
-              💡 Consiglio Santa Holidays: scegli i giorni 28-29-30
-            </div>
-          </div>
-          
-          <div id="calendarContainer" class="d-flex flex-wrap gap-2 mb-4 justify-content-start" role="group" aria-label="Calendario selezione ferie o vacanze"></div>
-
-          <div class="mb-3">
-            <label for="employeeNotes" class="form-label fw-bold small text-secondary">Note operative o comunicazioni:</label>
-            <textarea id="employeeNotes" class="form-control form-control-sm rounded-3 shadow-sm" rows="2" placeholder="Inserisci eventuali note..."></textarea>
-          </div>
-
-          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-            <span class="badge bg-secondary rounded-pill px-3 py-2 fs-6 shadow-sm" id="selectedCountBadge" aria-live="polite">Giorni scelti: 0</span>
-            <button id="saveRequestBtn" class="btn btn-green-holly rounded-3 px-4 py-2" onclick="saveEmployeeRequest()">
-              <span class="btn-text">💾 Salva Preferenze</span>
-              <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PANNELLO AMMINISTRATORE (ADMIN) -->
-    <section id="adminSection" class="d-none" aria-label="Pannello Amministratore">
-
-      <!-- RIQUADRO AGGIUNTA MANUALE -->
-      <div class="card card-glossy-light mb-4">
-        <div class="card-body p-4">
-          <h2 class="h6 fw-black text-danger mb-3">+ AGGIUNGI SINGOLO COLLABORATORE MANUALE</h2>
-          <form id="addUserForm" class="needs-validation" novalidate onsubmit="handleAddUser(event)">
-            <div class="row g-2 mb-2">
-              <div class="col-md-6">
-                <label for="addCognome" class="form-label extra-small fw-bold text-muted m-0">COGNOME *</label>
-                <input type="text" id="addCognome" class="form-control form-control-sm" placeholder="Cognome *" required aria-required="true">
-                <div class="invalid-feedback extra-small">Cognome obbligatorio.</div>
-              </div>
-              <div class="col-md-6">
-                <label for="addNome" class="form-label extra-small fw-bold text-muted m-0">NOME *</label>
-                <input type="text" id="addNome" class="form-control form-control-sm" placeholder="Nome *" required aria-required="true">
-                <div class="invalid-feedback extra-small">Nome obbligatorio.</div>
-              </div>
-            </div>
-            <div class="row g-2 mb-2">
-              <div class="col-md-6">
-                <label for="addEmail" class="form-label extra-small fw-bold text-muted m-0">EMAIL AZIENDALE *</label>
-                <input type="email" id="addEmail" class="form-control form-control-sm" placeholder="Email aziendale *" required aria-required="true">
-                <div class="invalid-feedback extra-small">Inserisci una mail aziendale valida.</div>
-              </div>
-              <div class="col-md-6">
-                <label for="addAzienda" class="form-label extra-small fw-bold text-muted m-0">AZIENDA</label>
-                <input type="text" id="addAzienda" class="form-control form-control-sm" placeholder="Azienda">
-              </div>
-            </div>
-            <div class="row g-2 mb-3">
-              <div class="col-md-3">
-                <label for="addBu" class="form-label extra-small fw-bold text-muted m-0">BU</label>
-                <input type="text" id="addBu" class="form-control form-control-sm" placeholder="BU">
-              </div>
-              <div class="col-md-3">
-                <label for="addTeam" class="form-label extra-small fw-bold text-muted m-0">TEAM</label>
-                <input type="text" id="addTeam" class="form-control form-control-sm" placeholder="Team">
-              </div>
-              <div class="col-md-3">
-                <label for="addReferente" class="form-label extra-small fw-bold text-muted m-0">REFERENTE</label>
-                <input type="text" id="addReferente" class="form-control form-control-sm" placeholder="Referente">
-              </div>
-              <div class="col-md-3">
-                <label for="addInquadramento" class="form-label extra-small fw-bold text-muted m-0">INQUADRAMENTO</label>
-                <select id="addInquadramento" class="form-select form-select-sm" aria-label="Seleziona Inquadramento">
-                  <option value="Dipendente">Dipendente</option>
-                  <option value="PartitaIVA">PartitaIVA</option>
-                  <option value="CoCoCo">CoCoCo</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" id="addUserBtn" class="btn btn-santa w-100 py-2 rounded-3">
-              <span class="btn-text">Salva Collaboratore in Anagrafica</span>
-              <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- TABELLA RISORSE ADMIN -->
-      <div class="card card-glossy-light mb-4">
-        <div class="card-body p-4">
-          <h2 class="h5 fw-black text-danger mb-3">Anagrafica Risorse & Azioni Admin</h2>
-
-          <!-- FILTRI -->
-          <div class="row g-2 mb-3">
-            <div class="col-md-3">
-              <label for="filterBu" class="form-label extra-small fw-bold text-muted m-0">🔍 FILTRA PER BU</label>
-              <select id="filterBu" class="form-select form-select-sm" onchange="applyFilters()">
-                <option value="">-- Tutte le BU --</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label for="filterTeam" class="form-label extra-small fw-bold text-muted m-0">🔍 FILTRA PER TEAM</label>
-              <select id="filterTeam" class="form-select form-select-sm" onchange="applyFilters()">
-                <option value="">-- Tutti i Team --</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label for="filterReferente" class="form-label extra-small fw-bold text-muted m-0">🔍 FILTRA PER REFERENTE</label>
-              <select id="filterReferente" class="form-select form-select-sm" onchange="applyFilters()">
-                <option value="">-- Tutti i Referenti --</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label for="filterSearch" class="form-label extra-small fw-bold text-muted m-0">🔍 CERCA TESTO LIBERO</label>
-              <input type="text" id="filterSearch" class="form-control form-control-sm" placeholder="Nome, cognome, email..." oninput="applyFilters()">
-            </div>
-          </div>
-
-          <!-- TABELLA BORDATA -->
-          <div class="table-responsive">
-            <table class="table admin-table-custom align-middle mb-3" aria-label="Anagrafica Collaboratori">
-              <thead>
-                <tr>
-                  <th scope="col">AZIENDA</th>
-                  <th scope="col">BU</th>
-                  <th scope="col">TEAM</th>
-                  <th scope="col">REFERENTE</th>
-                  <th scope="col">COGNOME E NOME</th>
-                  <th scope="col">INQUADRAMENTO</th>
-                  <th scope="col">GIORNI SCELTI</th>
-                  <th scope="col">STATO</th>
-                  <th scope="col">DATE SELEZIONATE</th>
-                  <th scope="col" style="min-width: 140px;">AZIONI ADMIN</th>
-                </tr>
-              </thead>
-              <tbody id="usersTableBody">
-                <!-- Generato da JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- EXCEL EXPORT -->
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
-            <span class="small text-muted fw-semibold">Scarica il file master delle presenze/assenze di Santa Holidays.</span>
-            <button class="btn btn-green-holly rounded-3 px-3 py-2" onclick="exportToExcel()" aria-label="Scarica il report Excel con la pianificazione ferie e vacanze">📊 Scarica Report Excel (.xlsx)</button>
-          </div>
-
-        </div>
-      </div>
-
-    </section>
-
-  </main>
+  </div>
 
   <script>
-    // AZIONE CHIUSURA SCHERMATA BENEVENUTO (SPLASH SCREEN)
-    function dismissWelcomeScreen() {
-      const splash = document.getElementById('welcomeSplashScreen');
-      splash.style.opacity = '0';
-      splash.style.visibility = 'hidden';
-      setTimeout(() => {
-        splash.style.display = 'none';
-      }, 600);
-    }
-
-    // HELPER PER LOADING NEI PULSANTI
-    function setButtonLoading(btn, isLoading) {
-      if (!btn) return;
-      const textEl = btn.querySelector('.btn-text');
-      const spinnerEl = btn.querySelector('.spinner-border');
-      btn.disabled = isLoading;
-      if (isLoading) {
-        if (textEl) textEl.classList.add('opacity-50');
-        if (spinnerEl) spinnerEl.classList.remove('d-none');
-      } else {
-        if (textEl) textEl.classList.remove('opacity-50');
-        if (spinnerEl) spinnerEl.classList.add('d-none');
-      }
-    }
-
-    // GENERATORE AUDIO NATALIZIO NATIVO
-    let audioCtx = null;
-    let isPlaying = false;
-    let audioInterval = null;
-
-    const jingleBellsNotes = [
-      { note: 659.25, duration: 250 }, { note: 659.25, duration: 250 }, { note: 659.25, duration: 500 },
-      { note: 659.25, duration: 250 }, { note: 659.25, duration: 250 }, { note: 659.25, duration: 500 },
-      { note: 659.25, duration: 250 }, { note: 783.99, duration: 250 }, { note: 523.25, duration: 375 }, { note: 587.33, duration: 125 },
-      { note: 659.25, duration: 1000 },
-      { note: 698.46, duration: 250 }, { note: 698.46, duration: 250 }, { note: 698.46, duration: 375 }, { note: 698.46, duration: 125 },
-      { note: 698.46, duration: 250 }, { note: 659.25, duration: 250 }, { note: 659.25, duration: 250 }, { note: 659.25, duration: 125 }, { note: 659.25, duration: 125 },
-      { note: 659.25, duration: 250 }, { note: 587.33, duration: 250 }, { note: 587.33, duration: 250 }, { note: 659.25, duration: 250 },
-      { note: 587.33, duration: 500 }, { note: 783.99, duration: 500 }
+    // Amministratori di Sistema autorizzati
+    const adminEmails = [
+      "chiara.pizzorno@hqe.it",
+      "gianluca.luccini@hqe.it",
+      "pietro.malcotti@hqe.it",
+      "rebecca.antenozio@hqe.it"
     ];
-
-    function playTone(freq, duration) {
-      if (!audioCtx || !isPlaying) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (duration / 1000));
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + (duration / 1000));
-      } catch (e) { console.error(e); }
-    }
-
-    function startMelodyLoop() {
-      let step = 0;
-      function nextNote() {
-        if (!isPlaying) return;
-        const noteObj = jingleBellsNotes[step];
-        playTone(noteObj.note, noteObj.duration);
-        step = (step + 1) % jingleBellsNotes.length;
-        audioInterval = setTimeout(nextNote, noteObj.duration + 50);
-      }
-      nextNote();
-    }
-
-    function toggleAudio() {
-      const btn = document.getElementById('musicToggleBtn');
-      if (!isPlaying) {
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-        isPlaying = true;
-        btn.innerText = '🎶 Musica: ON ✨';
-        btn.style.background = 'linear-gradient(145deg, #00b894, #009475)';
-        btn.style.borderColor = '#00f5d4';
-        startMelodyLoop();
-      } else {
-        isPlaying = false;
-        if (audioInterval) clearTimeout(audioInterval);
-        btn.innerText = '🎵 Musica: OFF';
-        btn.style.background = 'rgba(255, 255, 255, 0.15)';
-        btn.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-      }
-    }
-
-    // GENERAZIONE NEVE
-    const snowContainer = document.getElementById('snowflakeContainer');
-    for (let i = 0; i < 35; i++) {
-      const flake = document.createElement('div');
-      flake.className = 'snowflake';
-      flake.innerHTML = '❄';
-      flake.style.left = Math.random() * 100 + 'vw';
-      flake.style.animationDuration = (Math.random() * 3 + 4) + 's';
-      flake.style.animationDelay = Math.random() * 5 + 's';
-      flake.style.fontSize = (Math.random() * 10 + 12) + 'px';
-      snowContainer.appendChild(flake);
-    }
-
-    const RANGE_START = new Date("2026-12-21");
-    const RANGE_END = new Date("2027-01-10");
-    const ALL_RANGE_DATES = [];
-
-    let curr = new Date(RANGE_START);
-    while (curr <= RANGE_END) {
-      const yyyy = curr.getFullYear();
-      const mm = String(curr.getMonth() + 1).padStart(2, '0');
-      const dd = String(curr.getDate()).padStart(2, '0');
-      ALL_RANGE_DATES.push(`${yyyy}-${mm}-${dd}`);
-      curr.setDate(curr.getDate() + 1);
-    }
-
-    const CLOSED_DATES = ["2026-12-24", "2026-12-31", "2027-01-04", "2027-01-05"];
-    const HOLIDAY_DATES = ["2026-12-25", "2026-12-26", "2027-01-01", "2027-01-06"];
 
     let currentUser = null;
-    let isAdmin = false;
-    let allUsers = [];
-    let allRequests = {};
-    let employeeSelectedDates = [];
+    let expenses = [];
+    let supabaseClient = null;
 
-    // ELENCO EMAIL ADMIN AUTORIZZATE
-    const ADMIN_EMAILS = [
-      'chiara.pizzorno@hqe.it', 
-      'pietro.malcotti@hqe.it', 
-      'gianluca.luccini@hqe.it', 
-      'rebecca.antenozio@hqe.it'
-    ];
-
-    document.getElementById('loginEmail').addEventListener('input', function(e) {
-      const email = e.target.value.trim().toLowerCase();
-      const passwordField = document.getElementById('adminPasswordField');
-      const passwordInput = document.getElementById('loginPassword');
-      if (ADMIN_EMAILS.includes(email)) {
-        passwordField.classList.remove('d-none');
-        passwordInput.setAttribute('required', 'required');
-      } else {
-        passwordField.classList.add('d-none');
-        passwordInput.removeAttribute('required');
-        passwordInput.value = '';
+    // Inizializzazione sicura e silente di Supabase
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+          supabaseClient = window.supabase.createClient(
+            "https://uy8h9sjrls.supabase.co", 
+            "sb_publishable_uy8H9SJRLs_b8OUnC50D0A_EWrPDQ5l"
+          );
+        }
+      } catch(e) {
+        console.warn("Supabase init info:", e);
       }
     });
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      const form = document.getElementById('loginForm');
-      const submitBtn = document.getElementById('loginSubmitBtn');
-      const errDiv = document.getElementById('loginError');
-      errDiv.classList.add('d-none');
-
-      if (!form.checkValidity()) {
-        form.classList.add('was-validated');
-        return;
-      }
-
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value.trim();
-
-      setButtonLoading(submitBtn, true);
-
-      try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ email, password })
-        });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Errore durante l\'accesso. Verificare le credenziali.');
-
-        currentUser = data.user;
-        isAdmin = data.isAdmin;
-
-        document.getElementById('loginCard').classList.add('d-none');
-        document.getElementById('userInfo').classList.remove('d-none');
-        document.getElementById('userNameDisplay').innerText = `${currentUser.nome}${currentUser.cognome}`;
-
-        const badgeEl = document.getElementById('userInquadramentoBadge');
-        if (isAdmin) {
-          badgeEl.innerText = currentUser.inquadramento || 'Dipendente';
-          badgeEl.classList.remove('d-none');
-        } else {
-          badgeEl.classList.add('d-none');
-        }
-
-        setupInquadramentoView();
-
-        document.getElementById('calendarSection').classList.remove('d-none');
-        await loadEmployeeData();
-
-        if (isAdmin) {
-          document.getElementById('adminSection').classList.remove('d-none');
-          await loadAdminData();
-        }
-      } catch (err) {
-        errDiv.innerText = err.message || 'Connessione al server fallita.';
-        errDiv.classList.remove('d-none');
-      } finally {
-        setButtonLoading(submitBtn, false);
-      }
-    }
-
-    function setupInquadramentoView() {
-      const titleEl = document.getElementById('calendarTitle');
-      const textEl = document.getElementById('guidanceText');
-      const legendEl = document.getElementById('legendContainer');
-      const hqBox = document.getElementById('hqSuggestBox');
-      const headerEl = document.getElementById('mainHeader');
-      const headerSubtitleEl = document.getElementById('headerSubtitleContainer');
-
-      const inq = (currentUser.inquadramento || 'Dipendente').toLowerCase();
-      const isPIva = inq.includes('p.iva') || inq.includes('partita');
-      const isCoCoCo = inq.includes('cococo');
-
-      // STILI HEADER DEDICATI
-      headerEl.classList.remove('header-piva', 'header-cococo');
-      if (isPIva) {
-        headerEl.classList.add('header-piva');
-      } else if (isCoCoCo) {
-        headerEl.classList.add('header-cococo');
-      }
-
-      // FRASE IN ALTO SOTTO SANTA HOLIDAYS
-      if (isPIva) {
-        headerSubtitleEl.innerHTML = `anche i nostri fornitori vanno in vacanza - è arrivato il momento di prendersi una pausa`;
-      } else {
-        headerSubtitleEl.innerHTML = ``;
-      }
-
-      titleEl.innerText = "📅 Selezione Giornate";
-
-      // MESSAGGI PERSONALIZZATI IN BASE ALL'INQUADRAMENTO
-      if (isPIva) {
-        textEl.innerHTML = "💡 Indicaci in quali giorni hai intenzione di andare in vacanza, così da coordinare al meglio le commesse in tua gestione";
-        hqBox.innerText = "💡 Consiglio Santa Holidays: scegli i giorni 28-29-30";
-      } else if (isCoCoCo) {
-        textEl.innerHTML = "💡 indicaci in quali giorni hai intenzione di andare in vacanza, così da gestire al meglio i progetti a cui collabori";
-        hqBox.innerText = "💡 Consiglio Santa Holidays: scegli i giorni 28-29-30";
-      } else {
-        textEl.innerHTML = "💡 Scegli i tuoi giorni di Ferie Natalizie";
-        hqBox.innerText = "💡 Consiglio Santa Holidays: scegli i giorni 28-29-30";
-      }
-
-      legendEl.innerHTML = `
-        <div class="d-flex align-items-center gap-1.5"><span style="width:16px; height:16px; background:#d80032; display:inline-block; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.2);" aria-hidden="true"></span> Chiusura Aziendale</div>
-        <div class="d-flex align-items-center gap-1.5"><span style="width:16px; height:16px; background:#ff7675; display:inline-block; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.2);" aria-hidden="true"></span> Festività / Weekend</div>
-        <div class="d-flex align-items-center gap-1.5"><span style="width:16px; height:16px; background:#00b894; display:inline-block; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.2);" aria-hidden="true"></span> Selezionato da Te</div>
-        <div class="d-flex align-items-center gap-1.5"><span style="width:16px; height:16px; background:#ffffff; border:1px solid #ccc; display:inline-block; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" aria-hidden="true"></span> Selezionabile</div>
-      `;
-    }
-
-    function logout() {
-      location.reload();
-    }
-
-    async function loadEmployeeData() {
-      try {
-        const res = await fetch('/api/requests');
-        if (!res.ok) throw new Error();
-        allRequests = await res.json();
-        const userReq = allRequests[currentUser.email] || {};
-        employeeSelectedDates = userReq.dates || [];
-        document.getElementById('employeeNotes').value = userReq.notes || '';
-        renderCalendar();
-      } catch (e) {
-        alert('Impossibile recuperare i dati dell\'utente.');
-      }
-    }
-
-    function renderCalendar() {
-      const container = document.getElementById('calendarContainer');
-      container.innerHTML = '';
-
-      ALL_RANGE_DATES.forEach(dateStr => {
-        const d = new Date(dateStr);
-        const dayNum = d.getDate();
-        const monthShort = d.toLocaleString('it-IT', { month: 'short' });
-        const dayOfWeek = d.getDay();
-
-        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-        const isClosed = CLOSED_DATES.includes(dateStr);
-        const isHoliday = HOLIDAY_DATES.includes(dateStr) || isWeekend;
-
-        const box = document.createElement('div');
-        box.className = 'day-box';
-        box.setAttribute('role', 'button');
-
-        if (isClosed) {
-          box.classList.add('closed');
-          box.setAttribute('aria-disabled', 'true');
-          box.setAttribute('aria-label', `${dayNum} ${monthShort}, Chiusura Aziendale`);
-          box.innerHTML = `<div>${dayNum} ${monthShort}</div><div class="day-sub">Chiusura</div>`;
-        } else if (isHoliday) {
-          box.classList.add('holiday');
-          box.setAttribute('aria-disabled', 'true');
-          box.setAttribute('aria-label', `${dayNum} ${monthShort}, Festività o Weekend`);
-          box.innerHTML = `<div>${dayNum} ${monthShort}</div><div class="day-sub">Festa</div>`;
-        } else {
-          box.setAttribute('tabindex', '0');
-          const isSelected = employeeSelectedDates.includes(dateStr);
-          if (isSelected) {
-            box.classList.add('selected');
-          }
-          box.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-          box.setAttribute('aria-label', `${dayNum} ${monthShort}, Feriale. ${isSelected ? 'Selezionato' : 'Non selezionato'}`);
-          box.innerHTML = `<div>${dayNum} ${monthShort}</div><div class="day-sub">Feriale</div>`;
-          
-          box.onclick = () => toggleDateSelection(dateStr);
-          box.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              toggleDateSelection(dateStr);
-            }
-          };
-        }
-
-        container.appendChild(box);
-      });
-
-      const countBadge = document.getElementById('selectedCountBadge');
-      countBadge.innerText = `Giorni scelti: ${employeeSelectedDates.length}`;
-    }
-
-    function toggleDateSelection(dateStr) {
-      if (employeeSelectedDates.includes(dateStr)) {
-        employeeSelectedDates = employeeSelectedDates.filter(d => d !== dateStr);
-      } else {
-        employeeSelectedDates.push(dateStr);
-      }
-      renderCalendar();
-    }
-
-    async function saveEmployeeRequest() {
-      const btn = document.getElementById('saveRequestBtn');
-      setButtonLoading(btn, true);
-
-      try {
-        const notes = document.getElementById('employeeNotes').value;
-        const res = await fetch('/api/requests', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            email: currentUser.email,
-            dates: employeeSelectedDates,
-            notes: notes,
-            isValidated: false
-          })
-        });
-        
-        if (!res.ok) throw new Error();
-        alert('Preferenze salvate con successo!');
-        if (isAdmin) {
-          await loadAdminData();
-        }
-      } catch (err) {
-        alert('Errore durante il salvataggio delle preferenze.');
-      } finally {
-        setButtonLoading(btn, false);
-      }
-    }
-
-    async function loadAdminData() {
-      try {
-        const [uRes, rRes] = await Promise.all([
-          fetch('/api/users'),
-          fetch('/api/requests')
-        ]);
-        if (!uRes.ok || !rRes.ok) throw new Error();
-        allUsers = await uRes.json();
-        allRequests = await rRes.json();
-
-        populateFilterOptions();
-        renderUsersTable(allUsers);
-      } catch (e) {
-        alert('Errore nel caricamento del pannello amministratore.');
-      }
-    }
-
-    function populateFilterOptions() {
-      const bus = [...new Set(allUsers.map(u => u.bu).filter(Boolean))].sort();
-      const teams = [...new Set(allUsers.map(u => u.team).filter(Boolean))].sort();
-      const refs = [...new Set(allUsers.map(u => u.referente).filter(Boolean))].sort();
-
-      document.getElementById('filterBu').innerHTML = '<option value="">-- Tutte le BU --</option>' + bus.map(b => `<option value="${b}">${b}</option>`).join('');
-      document.getElementById('filterTeam').innerHTML = '<option value="">-- Tutti i Team --</option>' + teams.map(t => `<option value="${t}">${t}</option>`).join('');
-      document.getElementById('filterReferente').innerHTML = '<option value="">-- Tutti i Referenti --</option>' + refs.map(r => `<option value="${r}">${r}</option>`).join('');
-    }
-
-    function applyFilters() {
-      const bu = document.getElementById('filterBu').value;
-      const team = document.getElementById('filterTeam').value;
-      const ref = document.getElementById('filterReferente').value;
-      const search = document.getElementById('filterSearch').value.toLowerCase().trim();
-
-      const filtered = allUsers.filter(u => {
-        const matchesBu = !bu || u.bu === bu;
-        const matchesTeam = !team || u.team === team;
-        const matchesRef = !ref || u.referente === ref;
-        const fullText = `${u.cognome} ${u.nome} ${u.email}`.toLowerCase();
-        const matchesSearch = !search || fullText.includes(search);
-        return matchesBu && matchesTeam && matchesRef && matchesSearch;
-      });
-
-      renderUsersTable(filtered);
-    }
-
-    function renderUsersTable(users) {
-      const tbody = document.getElementById('usersTableBody');
-      tbody.innerHTML = '';
-
-      users.forEach(u => {
-        const req = allRequests[u.email] || {};
-        const dates = req.dates || [];
-        const datesCount = dates.length;
-        
-        const statusBadge = datesCount > 0 
-          ? '<span class="badge badge-inserito rounded-pill px-2.5 py-1">Confermato</span>' 
-          : '<span class="badge badge-da-inserire rounded-pill px-2.5 py-1">Da Inserire</span>';
-
-        const formattedDates = dates.map(d => {
-          const parts = d.split('-');
-          return `${parts[2]}/${parts[1]}`;
-        }).join(', ') || '-';
-
-        const tr = document.createElement('tr');
-        tr.id = `user-row-${u.email.replace(/[@.]/g, '_')}`;
-        tr.innerHTML = `
-          <td><span class="view-mode fw-bold text-dark">${u.azienda || ''}</span><input type="text" class="form-control form-control-sm edit-mode d-none val-azienda" value="${u.azienda || ''}" aria-label="Modifica Azienda"></td>
-          <td><span class="view-mode badge bg-light text-danger border fw-bold shadow-sm">${u.bu || ''}</span><input type="text" class="form-control form-control-sm edit-mode d-none val-bu" value="${u.bu || ''}" aria-label="Modifica BU"></td>
-          <td><span class="view-mode badge bg-light text-dark border shadow-sm">${u.team || ''}</span><input type="text" class="form-control form-control-sm edit-mode d-none val-team" value="${u.team || ''}" aria-label="Modifica Team"></td>
-          <td><span class="view-mode fw-semibold text-secondary">${u.referente || ''}</span><input type="text" class="form-control form-control-sm edit-mode d-none val-referente" value="${u.referente || ''}" aria-label="Modifica Referente"></td>
-          <td>
-            <div class="fw-extrabold text-dark" style="font-weight: 800;">${u.cognome} ${u.nome}</div>
-            <div class="extra-small text-muted">${u.email}</div>
-          </td>
-          <td><span class="view-mode badge bg-secondary shadow-sm">${u.inquadramento || ''}</span><input type="text" class="form-control form-control-sm edit-mode d-none val-inquadramento" value="${u.inquadramento || ''}" aria-label="Modifica Inquadramento"></td>
-          <td class="text-center fw-extrabold text-success" style="font-weight: 800;">${datesCount}</td>
-          <td class="text-center">${statusBadge}</td>
-          <td class="small fw-semibold text-secondary">${formattedDates}</td>
-          <td>
-            <div class="d-flex gap-1">
-              <button class="btn btn-sm btn-success btn-confirm d-none shadow-sm" onclick="saveUserEdit('${u.email}')" aria-label="Conferma modifiche per ${u.cognome} ${u.nome}">
-                <span class="btn-text">✓</span>
-                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-              </button>
-              <button class="btn btn-sm btn-outline-danger btn-edit rounded-2 fw-bold" onclick="enableUserEdit('${u.email}')" aria-label="Modifica collaboratore ${u.cognome} ${u.nome}">✏️</button>
-              <button class="btn btn-sm btn-outline-secondary rounded-2" onclick="deleteUser('${u.email}')" aria-label="Elimina collaboratore ${u.cognome} ${u.nome}">🗑️</button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function enableUserEdit(email) {
-      const tr = document.getElementById(`user-row-${email.replace(/[@.]/g, '_')}`);
-      tr.querySelectorAll('.view-mode').forEach(el => el.classList.add('d-none'));
-      tr.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('d-none'));
-      tr.querySelector('.btn-edit').classList.add('d-none');
-      tr.querySelector('.btn-confirm').classList.remove('d-none');
-    }
-
-    async function saveUserEdit(email) {
-      const tr = document.getElementById(`user-row-${email.replace(/[@.]/g, '_')}`);
-      const confirmBtn = tr.querySelector('.btn-confirm');
+    function login() {
+      const emailInput = document.getElementById('user-email-input').value.trim().toLowerCase();
       
-      const uData = {
-        email: email,
-        azienda: tr.querySelector('.val-azienda').value,
-        bu: tr.querySelector('.val-bu').value,
-        team: tr.querySelector('.val-team').value,
-        referente: tr.querySelector('.val-referente').value,
-        inquadramento: tr.querySelector('.val-inquadramento').value
-      };
-
-      setButtonLoading(confirmBtn, true);
-
-      try {
-        const res = await fetch('/api/users/update', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(uData)
-        });
-
-        if (!res.ok) throw new Error();
-        await loadAdminData();
-      } catch (err) {
-        alert('Errore nell\'aggiornamento del collaboratore.');
-        setButtonLoading(confirmBtn, false);
-      }
-    }
-
-    async function handleAddUser(e) {
-      e.preventDefault();
-      const form = document.getElementById('addUserForm');
-      const addBtn = document.getElementById('addUserBtn');
-
-      if (!form.checkValidity()) {
-        form.classList.add('was-validated');
+      if (!emailInput) {
+        alert("Inserisci un'email aziendale valida.");
         return;
       }
 
-      const newUser = {
-        cognome: document.getElementById('addCognome').value,
-        nome: document.getElementById('addNome').value,
-        email: document.getElementById('addEmail').value,
-        azienda: document.getElementById('addAzienda').value,
-        bu: document.getElementById('addBu').value,
-        team: document.getElementById('addTeam').value,
-        referente: document.getElementById('addReferente').value,
-        inquadramento: document.getElementById('addInquadramento').value
+      const parts = emailInput.split('@')[0].split('.');
+      const nomeAuto = (parts[0] || 'UTENTE').toUpperCase();
+      const cognomeAuto = (parts[1] || 'HQE').toUpperCase();
+      const isAdmin = adminEmails.includes(emailInput);
+
+      currentUser = {
+        email: emailInput,
+        nome: nomeAuto,
+        cognome: cognomeAuto,
+        cf: isAdmin ? "ADMIN_HQE" : "HQE_DIPENDENTE",
+        azienda: "HQ ENGINEERING SRL",
+        contratto: isAdmin ? "Amministratore" : "Dipendente",
+        ruolo: isAdmin ? "ADMIN" : "BASE"
       };
 
-      setButtonLoading(addBtn, true);
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('app-container').classList.remove('hidden');
 
-      try {
-        const res = await fetch('/api/users/add', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(newUser)
+      document.getElementById('p-name').innerText = `${currentUser.nome} ${currentUser.cognome}`;
+      document.getElementById('p-role-badge').innerText = currentUser.ruolo;
+
+      if (currentUser.ruolo === 'ADMIN') {
+        document.getElementById('nav-admin').classList.remove('hidden');
+      }
+
+      showSection('profile');
+      loadUserData();
+    }
+
+    function logout() { 
+      location.reload(); 
+    }
+
+    function showSection(secId) {
+      document.querySelectorAll('.app-sec').forEach(s => s.classList.add('hidden'));
+      document.getElementById(`sec-${secId}`).classList.remove('hidden');
+    }
+
+    function processOCR() {
+      const fileInput = document.getElementById('expense-file');
+      if (!fileInput.files[0] || !window.Tesseract) return;
+
+      document.getElementById('ocr-status').classList.remove('hidden');
+
+      Tesseract.recognize(fileInput.files[0], 'ita')
+        .then(({ data: { text } }) => {
+          document.getElementById('ocr-status').classList.add('hidden');
+          const matchAmount = text.match(/(\d+[\.,]\d{2})/);
+          if (matchAmount) {
+            document.getElementById('exp-amount').value = matchAmount[0].replace(',', '.');
+          }
+          document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+        })
+        .catch(() => {
+          document.getElementById('ocr-status').classList.add('hidden');
         });
+    }
 
-        if (!res.ok) throw new Error();
+    async function saveExpense() {
+      const fileInput = document.getElementById('expense-file');
+      const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
+      const date = document.getElementById('exp-date').value;
+      const desc = document.getElementById('exp-desc').value || "Nota Spesa Generica";
 
-        alert('Collaboratore aggiunto con successo!');
-        form.reset();
-        form.classList.remove('was-validated');
-        await loadAdminData();
-      } catch (err) {
-        alert('Errore durante l\'aggiunta del collaboratore.');
-      } finally {
-        setButtonLoading(addBtn, false);
+      if (!amount || !date) {
+        alert("Inserisci un importo e una data valida.");
+        return;
+      }
+
+      let fileUrl = "";
+
+      if (fileInput.files[0] && supabaseClient) {
+        try {
+          const file = fileInput.files[0];
+          const filePath = `${currentUser.email}/${Date.now()}_${file.name}`;
+          
+          const { data, error: uploadError } = await supabaseClient.storage
+            .from('ricevute')
+            .upload(filePath, file);
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabaseClient.storage.from('ricevute').getPublicUrl(filePath);
+            fileUrl = publicUrlData.publicUrl;
+          }
+        } catch(e) {
+          console.error("Storage Error:", e);
+        }
+      }
+
+      const newExpense = {
+        email: currentUser.email,
+        data_nota: date,
+        importo: amount,
+        descrizione: desc,
+        file_url: fileUrl
+      };
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('note_spese').insert([newExpense]);
+        } catch(e) {
+          console.error("DB Insert Error:", e);
+        }
+      }
+
+      expenses.push(newExpense);
+
+      alert(`Nota spesa inviata con successo! Notificato il gruppo Amministratori (Chiara Pizzorno, Gianluca Luccini, Pietro Malcotti, Rebecca Antenozio).`);
+      document.getElementById('exp-amount').value = '';
+      document.getElementById('exp-desc').value = '';
+      document.getElementById('expense-file').value = '';
+      showSection('profile');
+      loadUserData();
+    }
+
+    async function loadUserData() {
+      if (supabaseClient) {
+        try {
+          const { data: allExpenses, error } = await supabaseClient.from('note_spese').select('*');
+          if (!error && allExpenses && allExpenses.length > 0) {
+            expenses = allExpenses;
+          }
+        } catch(e) {
+          console.error("DB Select Error:", e);
+        }
+      }
+
+      const myExp = expenses.filter(e => e.email.toLowerCase() === currentUser.email.toLowerCase());
+      const totalSum = myExp.reduce((acc, curr) => acc + parseFloat(curr.importo || 0), 0);
+
+      document.getElementById('stat-count').innerText = myExp.length;
+      document.getElementById('stat-total').innerText = `€ ${totalSum.toFixed(2)}`;
+
+      const list = document.getElementById('my-expenses-list');
+      list.innerHTML = myExp.map(e => `
+        <tr class="hover:bg-slate-50/80 transition">
+          <td class="p-4 pl-6 font-medium text-slate-700">${e.data_nota}</td>
+          <td class="p-4 text-slate-600">${e.descrizione}</td>
+          <td class="p-4 font-bold text-slate-900">€ ${parseFloat(e.importo).toFixed(2)}</td>
+          <td class="p-4 pr-6">
+            ${e.file_url ? `<a href="${e.file_url}" target="_blank" class="inline-flex items-center space-x-1.5 text-blue-600 hover:text-blue-800 font-semibold"><i class="fa-solid fa-file-pdf"></i><span>Visualizza PDF</span></a>` : '<span class="text-slate-400 italic">Nessun file</span>'}
+          </td>
+        </tr>
+      `).join('') || `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nessuna nota spesa caricata</td></tr>`;
+
+      if (currentUser.ruolo === 'ADMIN') {
+        renderAdminTable();
       }
     }
 
-    async function deleteUser(email) {
-      if (!confirm(`Confermi di voler eliminare ${email}?`)) return;
+    function renderAdminTable() {
+      const adminList = document.getElementById('admin-resources-list');
+      
+      const userMap = {};
+      expenses.forEach(e => {
+        const em = e.email.toLowerCase();
+        if (!userMap[em]) userMap[em] = { count: 0, total: 0 };
+        userMap[em].count += 1;
+        userMap[em].total += parseFloat(e.importo || 0);
+      });
 
-      try {
-        const res = await fetch('/api/users/delete', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ email })
-        });
+      adminList.innerHTML = adminEmails.map(em => {
+        const stats = userMap[em] || { count: 0, total: 0 };
+        const namePart = em.split('@')[0].split('.');
+        const nome = (namePart[0] || 'ADMIN').toUpperCase();
+        const cognome = (namePart[1] || 'HQE').toUpperCase();
 
-        if (!res.ok) throw new Error();
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="p-4 pl-6 font-bold text-slate-900">${cognome}</td>
+            <td class="p-4 font-medium text-slate-700">${nome}</td>
+            <td class="p-4 font-mono text-xs text-slate-500">ADMIN_HQE</td>
+            <td class="p-4 text-xs text-slate-600"><span class="px-2.5 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg">ADMIN</span></td>
+            <td class="p-4 text-center font-bold text-slate-800">${stats.count}</td>
+            <td class="p-4 font-extrabold text-emerald-700">€ ${stats.total.toFixed(2)}</td>
+            <td class="p-4 pr-6 text-center">
+              <button onclick="openDetailModal('${em}')" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition">
+                <i class="fa-solid fa-eye mr-1"></i>Vedi (${stats.count})
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
 
-        alert('Collaboratore eliminato!');
-        await loadAdminData();
-      } catch (err) {
-        alert('Errore durante l\'eliminazione del collaboratore.');
-      }
+    function filterAdminTable() {
+      const query = document.getElementById('search-admin').value.toLowerCase();
+      const rows = document.querySelectorAll('#admin-resources-list tr');
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+      });
+    }
+
+    function openDetailModal(email) {
+      const resExp = expenses.filter(e => e.email.toLowerCase() === email.toLowerCase());
+
+      document.getElementById('modal-user-name').innerText = email;
+      document.getElementById('modal-user-email').innerText = email;
+
+      const modalList = document.getElementById('modal-expenses-list');
+      modalList.innerHTML = resExp.map(e => `
+        <tr>
+          <td class="p-3">${e.data_nota}</td>
+          <td class="p-3">${e.descrizione}</td>
+          <td class="p-3 font-bold text-slate-900">€ ${parseFloat(e.importo).toFixed(2)}</td>
+          <td class="p-3">
+            ${e.file_url ? `<a href="${e.file_url}" target="_blank" class="text-blue-600 underline font-semibold"><i class="fa-solid fa-file-pdf mr-1"></i>Apri PDF</a>` : '<span class="text-slate-400">Nessun file</span>'}
+          </td>
+        </tr>
+      `).join('') || `<tr><td colspan="4" class="p-4 text-center text-slate-400">Nessuna nota spesa presente</td></tr>`;
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+      document.getElementById('detail-modal').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+      document.getElementById('detail-modal').classList.remove('flex');
     }
 
     function exportToExcel() {
-      const data = allUsers.map(u => {
-        const req = allRequests[u.email] || {};
-        return {
-          'AZIENDA': u.azienda || '',
-          'BU': u.bu || '',
-          'TEAM': u.team || '',
-          'REFERENTE': u.referente || '',
-          'COGNOME E NOME': `${u.cognome} ${u.nome}`,
-          'INQUADRAMENTO': u.inquadramento || '',
-          'GIORNI SCELTI': (req.dates || []).length,
-          'STATO': (req.dates || []).length > 0 ? 'Confermato' : 'Da Inserire',
-          'DATE SELEZIONATE': (req.dates || []).join(', '),
-          'NOTE': req.notes || ''
-        };
-      });
-
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Pianificazione Natalizia");
-      XLSX.writeFile(wb, "Report_Pianificazione_Santa_Holidays.xlsx");
+      if (!window.XLSX) return;
+      const wb = XLSX.utils.table_to_book(document.getElementById('admin-table'), { sheet: "Note Spese Risorse HQE" });
+      XLSX.writeFile(wb, "HQE_Report_Generale_Note_Spese.xlsx");
     }
   </script>
 </body>
